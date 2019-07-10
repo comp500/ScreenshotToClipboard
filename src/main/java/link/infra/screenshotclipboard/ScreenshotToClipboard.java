@@ -12,7 +12,7 @@ import net.minecraftforge.client.event.ScreenshotEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
-@Mod(modid = ScreenshotToClipboard.MODID, name = ScreenshotToClipboard.NAME, version = ScreenshotToClipboard.VERSION)
+@Mod(modid = ScreenshotToClipboard.MODID, name = ScreenshotToClipboard.NAME, version = ScreenshotToClipboard.VERSION, clientSideOnly = true)
 @Mod.EventBusSubscriber
 public class ScreenshotToClipboard {
 	public static final String MODID = "screenshotclipboard";
