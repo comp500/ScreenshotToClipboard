@@ -13,6 +13,8 @@ import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
+import java.util.Iterator;
+import java.util.Spliterator;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.NativeImage;
@@ -30,10 +32,11 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.system.JNI;
-import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.system.*;
 import org.lwjgl.system.macosx.CoreFoundation;
 import org.lwjgl.system.macosx.ObjCRuntime;
+
+import javax.annotation.Nonnull;
 
 import static org.lwjgl.system.macosx.ObjCRuntime.objc_getClass;
 import static org.lwjgl.system.macosx.ObjCRuntime.sel_getUid;
@@ -181,14 +184,15 @@ public class ScreenshotToClipboard {
 			super(translationKey, args);
 			this.path = path;
 		}
-
+		
 		@Override
-		public String getUnformattedComponentText() {
+		@Nonnull
+		public Iterator<ITextComponent> iterator() {
 			if (!isDone) {
 				isDone = true;
 				doCopyMacOS(path);
 			}
-			return super.getUnformattedComponentText();
+			return super.iterator();
 		}
 	}
 
@@ -196,25 +200,38 @@ public class ScreenshotToClipboard {
 		if (!Minecraft.IS_RUNNING_ON_MAC) {
 			return;
 		}
-
+		
 		long objc_msgSend = ObjCRuntime.getLibrary().getFunctionAddress("objc_msgSend");
 		
-		// oh no
-		long string = CoreFoundation.CFStringCreateWithCStringNoCopy(0, StandardCharsets.UTF_8.encode(path), CoreFoundation.kCFStringEncodingUTF8, CoreFoundation.kCFAllocatorNull);
-		// [NSURL URLWithString:string]
-		long url = JNI.invokePPPP(objc_msgSend, objc_getClass("NSURL"), sel_getUid("URLWithString:"), string);
-		// [NSImage initWithContentsOfURL:url]
-		long image = JNI.invokePPPP(objc_msgSend, objc_getClass("NSImage"), sel_getUid("initWithContentsOfURL:"), 0);
-		
-		// [NSMutableArray init]
-		long array = JNI.invokePPP(objc_msgSend, objc_getClass("NSMutableArray"), sel_getUid("init"));
-		// [array addObject:image]
-		JNI.invokePPPP(objc_msgSend, array, sel_getUid("addObject:"), image);
-		
-		// [NSPasteboard generalPasteboard]
-		long pasteboard = JNI.invokePPP(objc_msgSend, objc_getClass("NSPasteboard"), sel_getUid("generalPasteboard"));
-		// [pasteboard writeObjects:array]
-		JNI.invokePPPP(objc_msgSend, pasteboard, sel_getUid("writeObjects:"), array);
+		try (MemoryStack stack = MemoryStack.stackPush()) {
+			// oh no
+			long string = CoreFoundation.CFStringCreateWithCStringNoCopy(0, stack.UTF8(path), CoreFoundation.kCFStringEncodingUTF8, CoreFoundation.kCFAllocatorNull);
+			// [NSURL URLWithString:string]
+			long url = JNI.invokePPPP(objc_getClass("NSURL"), sel_getUid("fileURLWithPath:"), string, objc_msgSend);
+			
+			// [NSImage alloc]
+			long rawImage = JNI.invokePPP(objc_getClass("NSImage"), sel_getUid("alloc"), objc_msgSend);
+			// [image initWithContentsOfURL:url]
+			long image = JNI.invokePPPP(rawImage, sel_getUid("initWithContentsOfURL:"), url, objc_msgSend);
+			assert image != 0;
+			
+			// [NSMutableArray alloc]
+			long rawArray = JNI.invokePPP(objc_getClass("NSMutableArray"), sel_getUid("alloc"), objc_msgSend);
+			// [array init]
+			long array = JNI.invokePPP(rawArray, sel_getUid("init"), objc_msgSend);
+			// [array addObject:image]
+			JNI.invokePPPV(array, sel_getUid("addObject:"), image, objc_msgSend);
+			
+			// [NSPasteboard generalPasteboard]
+			long pasteboard = JNI.invokePPP(objc_getClass("NSPasteboard"), sel_getUid("generalPasteboard"), objc_msgSend);
+			// [pasteboard clearContents]
+			int changesMade = JNI.invokePPPI(pasteboard, sel_getUid("clearContents"), array, objc_msgSend);
+			// [pasteboard writeObjects:array]
+			boolean wasSuccessful = JNI.invokePPPZ(pasteboard, sel_getUid("writeObjects:"), array, objc_msgSend);
+			assert wasSuccessful;
+			
+			CoreFoundation.CFRelease(string);
+		}
 	}
 
 }
