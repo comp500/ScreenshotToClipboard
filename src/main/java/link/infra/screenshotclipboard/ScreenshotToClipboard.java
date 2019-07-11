@@ -105,12 +105,9 @@ public class ScreenshotToClipboard {
 				img.getWidth()*4, 4,
 				bOffs, null), false, null);
 
+		// TODO: optimise by moving off-thread?
 		Transferable trans = getTransferableImage(bufImg);
 		Clipboard c = Toolkit.getDefaultToolkit().getSystemClipboard();
-		speedCheck(trans, c);
-	}
-
-	private void speedCheck(Transferable trans, Clipboard c) {
 		c.setContents(trans, null);
 	}
 
