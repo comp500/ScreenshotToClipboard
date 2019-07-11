@@ -12,6 +12,7 @@ import java.lang.annotation.Native;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.NativeImage;
@@ -25,7 +26,13 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.lwjgl.system.JNI;
 import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.system.macosx.CoreFoundation;
+import org.lwjgl.system.macosx.ObjCRuntime;
+
+import static org.lwjgl.system.macosx.ObjCRuntime.objc_getClass;
+import static org.lwjgl.system.macosx.ObjCRuntime.sel_getUid;
 
 @Mod("screenshotclipboard")
 public class ScreenshotToClipboard {
@@ -113,6 +120,27 @@ public class ScreenshotToClipboard {
 		}).start();
 	}
 
+	private void copyToClipboard(String path) {
+		long objc_msgSend = ObjCRuntime.getLibrary().getFunctionAddress("objc_msgSend");
+		
+		// oh no
+		long string = CoreFoundation.CFStringCreateWithCStringNoCopy(0, StandardCharsets.UTF_8.encode(path), CoreFoundation.kCFStringEncodingUTF8, CoreFoundation.kCFAllocatorNull);
+		// [NSURL URLWithString:string]
+		long url = JNI.invokePPPP(objc_msgSend, objc_getClass("NSURL"), sel_getUid("URLWithString:"), string);
+		// [NSImage initWithContentsOfURL:url]
+		long image = JNI.invokePPPP(objc_msgSend, objc_getClass("NSImage"), sel_getUid("initWithContentsOfURL:"), 0);
+		
+		// [NSMutableArray init]
+		long array = JNI.invokePPP(objc_msgSend, objc_getClass("NSMutableArray"), sel_getUid("init"));
+		// [array addObject:image]
+		JNI.invokePPPP(objc_msgSend, array, sel_getUid("addObject:"), image);
+		
+		// [NSPasteboard generalPasteboard]
+		long pasteboard = JNI.invokePPP(objc_msgSend, objc_getClass("NSPasteboard"), sel_getUid("generalPasteboard"));
+		// [pasteboard writeObjects:array]
+		JNI.invokePPPP(objc_msgSend, pasteboard, sel_getUid("writeObjects:"), array);
+	}
+	
 	private Field imagePointerField = null;
 
 	// This method is theoretically faster than safeGetPixelsRGBA but it might explode violently
