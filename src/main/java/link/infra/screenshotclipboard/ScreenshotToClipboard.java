@@ -16,7 +16,11 @@ import java.nio.charset.StandardCharsets;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.NativeImage;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.util.text.TextFormatting;
 import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.util.text.event.ClickEvent;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ScreenshotEvent;
 import net.minecraftforge.common.MinecraftForge;
@@ -51,10 +55,22 @@ public class ScreenshotToClipboard {
 	}
 
 	private boolean useHackyMode = true;
-	private boolean hasDisplayedMessage = false;
 
 	@SubscribeEvent
 	public void handleScreenshot(ScreenshotEvent event) {
+		if (Minecraft.IS_RUNNING_ON_MAC) {
+			String name = event.getScreenshotFile().getName();
+			String path = event.getScreenshotFile().getAbsolutePath();
+			// Replicate the default result message, but make it a NotifierTranslationTextComponent
+			// that does the copy when it is displayed (very sneakyyyyy)
+			ITextComponent itextcomponent = (new StringTextComponent(name)).applyTextStyle(TextFormatting.UNDERLINE).applyTextStyle((style) -> {
+				style.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_FILE, path));
+			});
+			TranslationTextComponent msg = new NotifierTranslationTextComponent("screenshot.success", path, itextcomponent);
+			event.setResultMessage(msg);
+			return;
+		}
+
 		NativeImage img = event.getImage();
 		// Only allow RGBA
 		if (img.getFormat() != NativeImage.PixelFormat.RGBA) {
@@ -77,16 +93,6 @@ public class ScreenshotToClipboard {
 			byteBuffer = safeGetPixelsRGBA(img);
 		}
 
-		// TODO: For macOS support, make a native library that takes a ByteBuffer of RGBA pixel data, and copies it to the clipboard
-		if (Minecraft.IS_RUNNING_ON_MAC) {
-			if (!hasDisplayedMessage) {
-				Minecraft.getInstance().ingameGUI.getChatGUI().printChatMessage(new TranslationTextComponent("screenshotclipboard.osx"));
-				hasDisplayedMessage = true;
-			}
-			LOGGER.warn("Screenshot to Clipboard is not currently supported on Mac OSX!");
-			return;
-		}
-
 		byte[] array;
 		if (byteBuffer.hasArray()) {
 			array = byteBuffer.array();
@@ -99,48 +105,6 @@ public class ScreenshotToClipboard {
 		doCopy(array, img.getWidth(), img.getHeight());
 	}
 
-	private void doCopy(byte[] imageData, int width, int height) {
-		new Thread(() -> {
-			DataBufferByte buf = new DataBufferByte(imageData, imageData.length);
-			// This is RGBA but it doesn't work with ColorModel.getRGBdefault for some reason!
-			ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_sRGB);
-			int[] nBits = {8, 8, 8, 8};
-			int[] bOffs = {0, 1, 2, 3}; // is this efficient, no transformation is being done?
-			ColorModel cm = new ComponentColorModel(cs, nBits, true, false,
-					Transparency.TRANSLUCENT,
-					DataBuffer.TYPE_BYTE);
-			BufferedImage bufImg = new BufferedImage(cm, Raster.createInterleavedRaster(buf,
-					width, height,
-					width * 4, 4,
-					bOffs, null), false, null);
-
-			Transferable trans = getTransferableImage(bufImg);
-			Clipboard c = Toolkit.getDefaultToolkit().getSystemClipboard();
-			c.setContents(trans, null);
-		}).start();
-	}
-
-	private void copyToClipboard(String path) {
-		long objc_msgSend = ObjCRuntime.getLibrary().getFunctionAddress("objc_msgSend");
-		
-		// oh no
-		long string = CoreFoundation.CFStringCreateWithCStringNoCopy(0, StandardCharsets.UTF_8.encode(path), CoreFoundation.kCFStringEncodingUTF8, CoreFoundation.kCFAllocatorNull);
-		// [NSURL URLWithString:string]
-		long url = JNI.invokePPPP(objc_msgSend, objc_getClass("NSURL"), sel_getUid("URLWithString:"), string);
-		// [NSImage initWithContentsOfURL:url]
-		long image = JNI.invokePPPP(objc_msgSend, objc_getClass("NSImage"), sel_getUid("initWithContentsOfURL:"), 0);
-		
-		// [NSMutableArray init]
-		long array = JNI.invokePPP(objc_msgSend, objc_getClass("NSMutableArray"), sel_getUid("init"));
-		// [array addObject:image]
-		JNI.invokePPPP(objc_msgSend, array, sel_getUid("addObject:"), image);
-		
-		// [NSPasteboard generalPasteboard]
-		long pasteboard = JNI.invokePPP(objc_msgSend, objc_getClass("NSPasteboard"), sel_getUid("generalPasteboard"));
-		// [pasteboard writeObjects:array]
-		JNI.invokePPPP(objc_msgSend, pasteboard, sel_getUid("writeObjects:"), array);
-	}
-	
 	private Field imagePointerField = null;
 
 	// This method is theoretically faster than safeGetPixelsRGBA but it might explode violently
@@ -167,6 +131,27 @@ public class ScreenshotToClipboard {
 		return byteBuffer;
 	}
 
+	private void doCopy(byte[] imageData, int width, int height) {
+		new Thread(() -> {
+			DataBufferByte buf = new DataBufferByte(imageData, imageData.length);
+			// This is RGBA but it doesn't work with ColorModel.getRGBdefault for some reason!
+			ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_sRGB);
+			int[] nBits = {8, 8, 8, 8};
+			int[] bOffs = {0, 1, 2, 3}; // is this efficient, no transformation is being done?
+			ColorModel cm = new ComponentColorModel(cs, nBits, true, false,
+					Transparency.TRANSLUCENT,
+					DataBuffer.TYPE_BYTE);
+			BufferedImage bufImg = new BufferedImage(cm, Raster.createInterleavedRaster(buf,
+					width, height,
+					width * 4, 4,
+					bOffs, null), false, null);
+
+			Transferable trans = getTransferableImage(bufImg);
+			Clipboard c = Toolkit.getDefaultToolkit().getSystemClipboard();
+			c.setContents(trans, null);
+		}).start();
+	}
+
 	private Transferable getTransferableImage(final BufferedImage bufferedImage) {
 		return new Transferable() {
 			@Override
@@ -187,6 +172,49 @@ public class ScreenshotToClipboard {
 				throw new UnsupportedFlavorException(flavor);
 			}
 		};
+	}
+
+	private static class NotifierTranslationTextComponent extends TranslationTextComponent {
+		final String path;
+		private boolean isDone = false;
+		NotifierTranslationTextComponent(String translationKey, String path, Object... args) {
+			super(translationKey, args);
+			this.path = path;
+		}
+
+		@Override
+		public String getUnformattedComponentText() {
+			if (!isDone) {
+				isDone = true;
+				doCopyMacOS(path);
+			}
+			return super.getUnformattedComponentText();
+		}
+	}
+
+	private static void doCopyMacOS(String path) {
+		if (!Minecraft.IS_RUNNING_ON_MAC) {
+			return;
+		}
+
+		long objc_msgSend = ObjCRuntime.getLibrary().getFunctionAddress("objc_msgSend");
+		
+		// oh no
+		long string = CoreFoundation.CFStringCreateWithCStringNoCopy(0, StandardCharsets.UTF_8.encode(path), CoreFoundation.kCFStringEncodingUTF8, CoreFoundation.kCFAllocatorNull);
+		// [NSURL URLWithString:string]
+		long url = JNI.invokePPPP(objc_msgSend, objc_getClass("NSURL"), sel_getUid("URLWithString:"), string);
+		// [NSImage initWithContentsOfURL:url]
+		long image = JNI.invokePPPP(objc_msgSend, objc_getClass("NSImage"), sel_getUid("initWithContentsOfURL:"), 0);
+		
+		// [NSMutableArray init]
+		long array = JNI.invokePPP(objc_msgSend, objc_getClass("NSMutableArray"), sel_getUid("init"));
+		// [array addObject:image]
+		JNI.invokePPPP(objc_msgSend, array, sel_getUid("addObject:"), image);
+		
+		// [NSPasteboard generalPasteboard]
+		long pasteboard = JNI.invokePPP(objc_msgSend, objc_getClass("NSPasteboard"), sel_getUid("generalPasteboard"));
+		// [pasteboard writeObjects:array]
+		JNI.invokePPPP(objc_msgSend, pasteboard, sel_getUid("writeObjects:"), array);
 	}
 
 }
