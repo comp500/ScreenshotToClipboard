@@ -27,9 +27,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.system.MemoryUtil;
 
-import static org.lwjgl.system.JNI.invokePPP;
-import static org.lwjgl.system.macosx.CoreFoundation.CFStringCreateWithCStringNoCopy;
-
 @Mod("screenshotclipboard")
 public class ScreenshotToClipboard {
 	private static final Logger LOGGER = LogManager.getLogger();
