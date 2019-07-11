@@ -15,6 +15,7 @@ import java.nio.ByteOrder;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.NativeImage;
+import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ScreenshotEvent;
 import net.minecraftforge.common.MinecraftForge;
@@ -24,24 +25,29 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.glfw.GLFW;
 import org.lwjgl.system.MemoryUtil;
 
 @Mod("screenshotclipboard")
 public class ScreenshotToClipboard {
 	private static final Logger LOGGER = LogManager.getLogger();
+	private final boolean isOSX;
 
 	public ScreenshotToClipboard() {
+		String osName = System.getProperty("os.name");
+		isOSX = osName.startsWith("Mac OS X") || osName.startsWith("Darwin");
 		DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> {
 			// A bit dangerous, but shouldn't technically cause any issues on most platforms - headless mode just disables the awt API
 			// Minecraft usually has this enabled because it's using GLFW rather than AWT/Swing
 			// Also causes problems on OSX, see: https://github.com/MinecraftForge/MinecraftForge/pull/5591#issuecomment-470805491
-			System.setProperty("java.awt.headless", "false");
+			if (!isOSX) {
+				System.setProperty("java.awt.headless", "false");
+			}
 			MinecraftForge.EVENT_BUS.register(this);
 		});
 	}
 
 	private boolean useHackyMode = true;
+	private boolean hasDisplayedMessage = false;
 
 	@SubscribeEvent
 	public void handleScreenshot(ScreenshotEvent event) {
@@ -50,8 +56,6 @@ public class ScreenshotToClipboard {
 		if (img.getFormat() != NativeImage.PixelFormat.RGBA) {
 			return;
 		}
-
-		//BufferedImage bufImg = new BufferedImage(img.getWidth(), img.getHeight(), BufferedImage.TYPE_INT_ARGB);
 
 		// Convert NativeImage to BufferedImage
 		ByteBuffer byteBuffer = null;
@@ -70,6 +74,14 @@ public class ScreenshotToClipboard {
 		}
 
 		// TODO: For Mac OSX support, make a native library that takes a ByteBuffer of RGBA pixel data, and copies it to the clipboard
+		if (isOSX) {
+			if (!hasDisplayedMessage) {
+				Minecraft.getInstance().ingameGUI.getChatGUI().printChatMessage(new TranslationTextComponent("screenshotclipboard.osx"));
+				hasDisplayedMessage = true;
+			}
+			LOGGER.warn("Screenshot to Clipboard is not currently supported on Mac OSX!");
+			return;
+		}
 
 		byte[] array;
 		if (byteBuffer.hasArray()) {
@@ -81,17 +93,10 @@ public class ScreenshotToClipboard {
 		}
 
 		DataBufferByte buf = new DataBufferByte(array, array.length);
-//		int[] array = new int[byteBuffer.remaining() / 4];
-//		byteBuffer.asIntBuffer().get(array);
-//		DataBufferInt buf = new DataBufferInt(array, array.length);
-		//ColorModel cm = ColorModel.getRGBdefault();
-		//BufferedImage bufImg = new BufferedImage(cm, Raster.createWritableRaster(cm.createCompatibleSampleModel(img.getWidth(), img.getHeight()), buf, null), false, null);
-
 		// This is RGBA but it doesn't work with ColorModel.getRGBdefault for some reason!
 		ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_sRGB);
 		int[] nBits = {8, 8, 8, 8};
-		//int[] bOffs = {3, 2, 1, 0};
-		int[] bOffs = {0, 1, 2, 3};
+		int[] bOffs = {0, 1, 2, 3}; // is this efficient, no transformation is being done?
 		ColorModel cm = new ComponentColorModel(cs, nBits, true, false,
 				Transparency.TRANSLUCENT,
 				DataBuffer.TYPE_BYTE);
@@ -102,6 +107,10 @@ public class ScreenshotToClipboard {
 
 		Transferable trans = getTransferableImage(bufImg);
 		Clipboard c = Toolkit.getDefaultToolkit().getSystemClipboard();
+		speedCheck(trans, c);
+	}
+
+	private void speedCheck(Transferable trans, Clipboard c) {
 		c.setContents(trans, null);
 	}
 
