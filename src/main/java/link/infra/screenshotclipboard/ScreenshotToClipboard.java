@@ -32,7 +32,6 @@ public class ScreenshotToClipboard {
 	private static final Logger LOGGER = LogManager.getLogger();
 
 	public ScreenshotToClipboard() {
-		String osName = System.getProperty("os.name");
 		DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> {
 			// A bit dangerous, but shouldn't technically cause any issues on most platforms - headless mode just disables the awt API
 			// Minecraft usually has this enabled because it's using GLFW rather than AWT/Swing
@@ -90,23 +89,28 @@ public class ScreenshotToClipboard {
 			byteBuffer.get(array);
 		}
 
-		DataBufferByte buf = new DataBufferByte(array, array.length);
-		// This is RGBA but it doesn't work with ColorModel.getRGBdefault for some reason!
-		ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_sRGB);
-		int[] nBits = {8, 8, 8, 8};
-		int[] bOffs = {0, 1, 2, 3}; // is this efficient, no transformation is being done?
-		ColorModel cm = new ComponentColorModel(cs, nBits, true, false,
-				Transparency.TRANSLUCENT,
-				DataBuffer.TYPE_BYTE);
-		BufferedImage bufImg = new BufferedImage(cm, Raster.createInterleavedRaster(buf,
-				img.getWidth(), img.getHeight(),
-				img.getWidth()*4, 4,
-				bOffs, null), false, null);
+		doCopy(array, img.getWidth(), img.getHeight());
+	}
 
-		// TODO: optimise by moving off-thread?
-		Transferable trans = getTransferableImage(bufImg);
-		Clipboard c = Toolkit.getDefaultToolkit().getSystemClipboard();
-		c.setContents(trans, null);
+	private void doCopy(byte[] imageData, int width, int height) {
+		new Thread(() -> {
+			DataBufferByte buf = new DataBufferByte(imageData, imageData.length);
+			// This is RGBA but it doesn't work with ColorModel.getRGBdefault for some reason!
+			ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_sRGB);
+			int[] nBits = {8, 8, 8, 8};
+			int[] bOffs = {0, 1, 2, 3}; // is this efficient, no transformation is being done?
+			ColorModel cm = new ComponentColorModel(cs, nBits, true, false,
+					Transparency.TRANSLUCENT,
+					DataBuffer.TYPE_BYTE);
+			BufferedImage bufImg = new BufferedImage(cm, Raster.createInterleavedRaster(buf,
+					width, height,
+					width * 4, 4,
+					bOffs, null), false, null);
+
+			Transferable trans = getTransferableImage(bufImg);
+			Clipboard c = Toolkit.getDefaultToolkit().getSystemClipboard();
+			c.setContents(trans, null);
+		}).start();
 	}
 
 	private Field imagePointerField = null;
