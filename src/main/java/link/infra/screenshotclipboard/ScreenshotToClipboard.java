@@ -16,6 +16,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.Spliterator;
 
+import ca.weblite.objc.Client;
+import ca.weblite.objc.Proxy;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.NativeImage;
 import net.minecraft.util.text.ITextComponent;
@@ -201,37 +203,19 @@ public class ScreenshotToClipboard {
 			return;
 		}
 		
-		long objc_msgSend = ObjCRuntime.getLibrary().getFunctionAddress("objc_msgSend");
+		Client client = Client.getInstance();
+		Proxy url = client.sendProxy("NSURL", "fileURLWithPath:", path);
 		
-		try (MemoryStack stack = MemoryStack.stackPush()) {
-			// oh no
-			long string = CoreFoundation.CFStringCreateWithCStringNoCopy(0, stack.UTF8(path), CoreFoundation.kCFStringEncodingUTF8, CoreFoundation.kCFAllocatorNull);
-			// [NSURL URLWithString:string]
-			long url = JNI.invokePPPP(objc_getClass("NSURL"), sel_getUid("fileURLWithPath:"), string, objc_msgSend);
-			
-			// [NSImage alloc]
-			long rawImage = JNI.invokePPP(objc_getClass("NSImage"), sel_getUid("alloc"), objc_msgSend);
-			// [image initWithContentsOfURL:url]
-			long image = JNI.invokePPPP(rawImage, sel_getUid("initWithContentsOfURL:"), url, objc_msgSend);
-			assert image != 0;
-			
-			// [NSMutableArray alloc]
-			long rawArray = JNI.invokePPP(objc_getClass("NSMutableArray"), sel_getUid("alloc"), objc_msgSend);
-			// [array init]
-			long array = JNI.invokePPP(rawArray, sel_getUid("init"), objc_msgSend);
-			// [array addObject:image]
-			JNI.invokePPPV(array, sel_getUid("addObject:"), image, objc_msgSend);
-			
-			// [NSPasteboard generalPasteboard]
-			long pasteboard = JNI.invokePPP(objc_getClass("NSPasteboard"), sel_getUid("generalPasteboard"), objc_msgSend);
-			// [pasteboard clearContents]
-			int changesMade = JNI.invokePPPI(pasteboard, sel_getUid("clearContents"), array, objc_msgSend);
-			// [pasteboard writeObjects:array]
-			boolean wasSuccessful = JNI.invokePPPZ(pasteboard, sel_getUid("writeObjects:"), array, objc_msgSend);
-			assert wasSuccessful;
-			
-			CoreFoundation.CFRelease(string);
-		}
+		Proxy image = client.sendProxy("NSImage", "alloc");
+		image.send("initWithContentsOfURL:", url);
+		
+		Proxy array = client.sendProxy("NSArray", "array");
+		array = array.sendProxy("arrayByAddingObject:", image);
+		
+		Proxy pasteboard = client.sendProxy("NSPasteboard", "generalPasteboard");
+		pasteboard.send("clearContents");
+		boolean wasSuccessful = pasteboard.sendBoolean("writeObjects:", array);
+		assert wasSuccessful;
 	}
 
 }
