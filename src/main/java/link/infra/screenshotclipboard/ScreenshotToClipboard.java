@@ -35,7 +35,7 @@ public class ScreenshotToClipboard {
 		DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> {
 			// A bit dangerous, but shouldn't technically cause any issues on most platforms - headless mode just disables the awt API
 			// Minecraft usually has this enabled because it's using GLFW rather than AWT/Swing
-			// Also causes problems on OSX, see: https://github.com/MinecraftForge/MinecraftForge/pull/5591#issuecomment-470805491
+			// Also causes problems on macOS, see: https://github.com/MinecraftForge/MinecraftForge/pull/5591#issuecomment-470805491
 			if (!Minecraft.IS_RUNNING_ON_MAC) {
 				System.setProperty("java.awt.headless", "false");
 			}
@@ -70,7 +70,7 @@ public class ScreenshotToClipboard {
 			byteBuffer = safeGetPixelsRGBA(img);
 		}
 
-		// TODO: For Mac OSX support, make a native library that takes a ByteBuffer of RGBA pixel data, and copies it to the clipboard
+		// TODO: For macOS support, make a native library that takes a ByteBuffer of RGBA pixel data, and copies it to the clipboard
 		if (Minecraft.IS_RUNNING_ON_MAC) {
 			if (!hasDisplayedMessage) {
 				Minecraft.getInstance().ingameGUI.getChatGUI().printChatMessage(new TranslationTextComponent("screenshotclipboard.osx"));
