@@ -1,30 +1,7 @@
 package link.infra.screenshotclipboard;
 
-import java.awt.*;
-import java.awt.color.ColorSpace;
-import java.awt.datatransfer.Clipboard;
-import java.awt.datatransfer.DataFlavor;
-import java.awt.datatransfer.Transferable;
-import java.awt.datatransfer.UnsupportedFlavorException;
-import java.awt.image.*;
-import java.io.IOException;
-import java.lang.annotation.Native;
-import java.lang.reflect.Field;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.charset.StandardCharsets;
-import java.util.Iterator;
-import java.util.Spliterator;
-
-import ca.weblite.objc.Client;
-import ca.weblite.objc.Proxy;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.NativeImage;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.util.text.TextFormatting;
-import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.util.text.event.ClickEvent;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ScreenshotEvent;
 import net.minecraftforge.common.MinecraftForge;
@@ -34,14 +11,19 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.system.*;
-import org.lwjgl.system.macosx.CoreFoundation;
-import org.lwjgl.system.macosx.ObjCRuntime;
+import org.lwjgl.system.MemoryUtil;
 
-import javax.annotation.Nonnull;
-
-import static org.lwjgl.system.macosx.ObjCRuntime.objc_getClass;
-import static org.lwjgl.system.macosx.ObjCRuntime.sel_getUid;
+import java.awt.*;
+import java.awt.color.ColorSpace;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
+import java.awt.datatransfer.UnsupportedFlavorException;
+import java.awt.image.*;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 @Mod("screenshotclipboard")
 public class ScreenshotToClipboard {
@@ -64,15 +46,7 @@ public class ScreenshotToClipboard {
 	@SubscribeEvent
 	public void handleScreenshot(ScreenshotEvent event) {
 		if (Minecraft.IS_RUNNING_ON_MAC) {
-			String name = event.getScreenshotFile().getName();
-			String path = event.getScreenshotFile().getAbsolutePath();
-			// Replicate the default result message, but make it a NotifierTranslationTextComponent
-			// that does the copy when it is displayed (very sneakyyyyy)
-			ITextComponent itextcomponent = (new StringTextComponent(name)).applyTextStyle(TextFormatting.UNDERLINE).applyTextStyle((style) -> {
-				style.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_FILE, path));
-			});
-			TranslationTextComponent msg = new NotifierTranslationTextComponent("screenshot.success", path, itextcomponent);
-			event.setResultMessage(msg);
+			MacOSCompat.handleScreenshot(event);
 			return;
 		}
 
@@ -161,7 +135,7 @@ public class ScreenshotToClipboard {
 		return new Transferable() {
 			@Override
 			public DataFlavor[] getTransferDataFlavors() {
-				return new DataFlavor[] { DataFlavor.imageFlavor };
+				return new DataFlavor[]{DataFlavor.imageFlavor};
 			}
 
 			@Override
@@ -178,44 +152,4 @@ public class ScreenshotToClipboard {
 			}
 		};
 	}
-
-	private static class NotifierTranslationTextComponent extends TranslationTextComponent {
-		final String path;
-		private boolean isDone = false;
-		NotifierTranslationTextComponent(String translationKey, String path, Object... args) {
-			super(translationKey, args);
-			this.path = path;
-		}
-		
-		@Override
-		@Nonnull
-		public Iterator<ITextComponent> iterator() {
-			if (!isDone) {
-				isDone = true;
-				doCopyMacOS(path);
-			}
-			return super.iterator();
-		}
-	}
-
-	private static void doCopyMacOS(String path) {
-		if (!Minecraft.IS_RUNNING_ON_MAC) {
-			return;
-		}
-		
-		Client client = Client.getInstance();
-		Proxy url = client.sendProxy("NSURL", "fileURLWithPath:", path);
-		
-		Proxy image = client.sendProxy("NSImage", "alloc");
-		image.send("initWithContentsOfURL:", url);
-		
-		Proxy array = client.sendProxy("NSArray", "array");
-		array = array.sendProxy("arrayByAddingObject:", image);
-		
-		Proxy pasteboard = client.sendProxy("NSPasteboard", "generalPasteboard");
-		pasteboard.send("clearContents");
-		boolean wasSuccessful = pasteboard.sendBoolean("writeObjects:", array);
-		assert wasSuccessful;
-	}
-
 }
