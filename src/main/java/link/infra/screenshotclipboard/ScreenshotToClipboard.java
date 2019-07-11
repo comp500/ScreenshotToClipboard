@@ -27,19 +27,20 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.system.MemoryUtil;
 
+import static org.lwjgl.system.JNI.invokePPP;
+import static org.lwjgl.system.macosx.CoreFoundation.CFStringCreateWithCStringNoCopy;
+
 @Mod("screenshotclipboard")
 public class ScreenshotToClipboard {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private final boolean isOSX;
 
 	public ScreenshotToClipboard() {
 		String osName = System.getProperty("os.name");
-		isOSX = osName.startsWith("Mac OS X") || osName.startsWith("Darwin");
 		DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> {
 			// A bit dangerous, but shouldn't technically cause any issues on most platforms - headless mode just disables the awt API
 			// Minecraft usually has this enabled because it's using GLFW rather than AWT/Swing
 			// Also causes problems on OSX, see: https://github.com/MinecraftForge/MinecraftForge/pull/5591#issuecomment-470805491
-			if (!isOSX) {
+			if (!Minecraft.IS_RUNNING_ON_MAC) {
 				System.setProperty("java.awt.headless", "false");
 			}
 			MinecraftForge.EVENT_BUS.register(this);
@@ -74,7 +75,7 @@ public class ScreenshotToClipboard {
 		}
 
 		// TODO: For Mac OSX support, make a native library that takes a ByteBuffer of RGBA pixel data, and copies it to the clipboard
-		if (isOSX) {
+		if (Minecraft.IS_RUNNING_ON_MAC) {
 			if (!hasDisplayedMessage) {
 				Minecraft.getInstance().ingameGUI.getChatGUI().printChatMessage(new TranslationTextComponent("screenshotclipboard.osx"));
 				hasDisplayedMessage = true;
