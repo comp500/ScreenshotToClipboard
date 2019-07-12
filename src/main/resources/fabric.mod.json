@@ -10,7 +10,8 @@
   ],
   "contact": {
     "homepage": "https://www.curseforge.com/minecraft/mc-mods/screenshot-to-clipboard-fabric",
-    "sources": "https://github.com/comp500/ScreenshotToClipboard/tree/1.14-fabric"
+    "sources": "https://github.com/comp500/ScreenshotToClipboard/tree/1.14-fabric",
+    "issues": "https://github.com/comp500/ScreenshotToClipboard/issues"
   },
 
   "license": "MIT",
