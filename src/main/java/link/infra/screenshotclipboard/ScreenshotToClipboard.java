@@ -1,14 +1,9 @@
 package link.infra.screenshotclipboard;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.NativeImage;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ScreenshotEvent;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
+import link.infra.screenshotclipboard.mixin.NativeImageMixin;
+import net.fabricmc.api.ModInitializer;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.texture.NativeImage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.system.MemoryUtil;
@@ -20,39 +15,31 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.image.*;
-import java.io.IOException;
-import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-@Mod("screenshotclipboard")
-public class ScreenshotToClipboard {
-	private static final Logger LOGGER = LogManager.getLogger();
+public class ScreenshotToClipboard implements ModInitializer {
+	private static final Logger LOGGER = LogManager.getFormatterLogger("ScreenshotToClipboard");
 
-	public ScreenshotToClipboard() {
-		DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> {
-			// A bit dangerous, but shouldn't technically cause any issues on most platforms - headless mode just disables the awt API
-			// Minecraft usually has this enabled because it's using GLFW rather than AWT/Swing
-			// Also causes problems on macOS, see: https://github.com/MinecraftForge/MinecraftForge/pull/5591#issuecomment-470805491
-			if (!Minecraft.IS_RUNNING_ON_MAC) {
-				System.setProperty("java.awt.headless", "false");
-			}
-			MinecraftForge.EVENT_BUS.register(this);
-		});
+	@Override
+	public void onInitialize() {
+		// A bit dangerous, but shouldn't technically cause any issues on most platforms - headless mode just disables the awt API
+		// Minecraft usually has this enabled because it's using GLFW rather than AWT/Swing
+		// Also causes problems on macOS, see: https://github.com/MinecraftForge/MinecraftForge/pull/5591#issuecomment-470805491
+		if (!MinecraftClient.IS_SYSTEM_MAC) {
+			System.setProperty("java.awt.headless", "false");
+		}
 	}
 
-	private boolean useHackyMode = true;
+	private static boolean useHackyMode = true;
 
-	@SubscribeEvent
-	public void handleScreenshot(ScreenshotEvent event) {
-		if (Minecraft.IS_RUNNING_ON_MAC) {
-			MacOSCompat.handleScreenshot(event);
+	public static void handleScreenshot(NativeImage img) {
+		if (MinecraftClient.IS_SYSTEM_MAC) {
 			return;
 		}
 
-		NativeImage img = event.getImage();
 		// Only allow RGBA
-		if (img.getFormat() != NativeImage.PixelFormat.RGBA) {
+		if (img.getFormat() != NativeImage.Format.RGBA) {
 			return;
 		}
 
@@ -84,14 +71,9 @@ public class ScreenshotToClipboard {
 		doCopy(array, img.getWidth(), img.getHeight());
 	}
 
-	private Field imagePointerField = null;
-
 	// This method is theoretically faster than safeGetPixelsRGBA but it might explode violently
-	private ByteBuffer hackyUnsafeGetPixelsRGBA(NativeImage img) throws Exception {
-		if (imagePointerField == null) {
-			imagePointerField = ObfuscationReflectionHelper.findField(NativeImage.class, "field_195722_d");
-		}
-		long imagePointer = imagePointerField.getLong(img);
+	private static ByteBuffer hackyUnsafeGetPixelsRGBA(NativeImage img) throws RuntimeException {
+		long imagePointer = ((NativeImageMixin) (Object) img).getPointer();
 		ByteBuffer buf = MemoryUtil.memByteBufferSafe(imagePointer, img.getWidth() * img.getHeight() * 4);
 		if (buf == null) {
 			throw new RuntimeException("Invalid image");
@@ -99,7 +81,7 @@ public class ScreenshotToClipboard {
 		return buf;
 	}
 
-	private ByteBuffer safeGetPixelsRGBA(NativeImage img) {
+	private static ByteBuffer safeGetPixelsRGBA(NativeImage img) {
 		ByteBuffer byteBuffer = ByteBuffer.allocate(img.getWidth() * img.getHeight() * 4);
 		byteBuffer.order(ByteOrder.LITTLE_ENDIAN); // is this system dependent? TEST!!
 		for (int y = 0; y < img.getHeight(); y++) {
@@ -110,7 +92,7 @@ public class ScreenshotToClipboard {
 		return byteBuffer;
 	}
 
-	private void doCopy(byte[] imageData, int width, int height) {
+	private static void doCopy(byte[] imageData, int width, int height) {
 		new Thread(() -> {
 			DataBufferByte buf = new DataBufferByte(imageData, imageData.length);
 			// This is RGBA but it doesn't work with ColorModel.getRGBdefault for some reason!
@@ -131,7 +113,7 @@ public class ScreenshotToClipboard {
 		}).start();
 	}
 
-	private Transferable getTransferableImage(final BufferedImage bufferedImage) {
+	private static Transferable getTransferableImage(final BufferedImage bufferedImage) {
 		return new Transferable() {
 			@Override
 			public DataFlavor[] getTransferDataFlavors() {
@@ -144,7 +126,7 @@ public class ScreenshotToClipboard {
 			}
 
 			@Override
-			public Object getTransferData(DataFlavor flavor) throws UnsupportedFlavorException, IOException {
+			public Object getTransferData(DataFlavor flavor) throws UnsupportedFlavorException {
 				if (DataFlavor.imageFlavor.equals(flavor)) {
 					return bufferedImage;
 				}

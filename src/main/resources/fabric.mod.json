@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "screenshotclipboard",
+  "version": "${version}",
+
+  "name": "Screenshot to Clipboard",
+  "description": "Any time you take a screenshot in the game, the image data is copied to the clipboard. You can then paste this anywhere (e.g. Discord) to upload the image and share it with others.",
+  "authors": [
+    "comp500"
+  ],
+  "contact": {
+    "homepage": "https://www.curseforge.com/minecraft/mc-mods/screenshot-to-clipboard-fabric",
+    "sources": "https://github.com/comp500/ScreenshotToClipboard/tree/1.14-fabric"
+  },
+
+  "license": "MIT",
+  "icon": "assets/screenshotclipboard/icon.png",
+
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "link.infra.screenshotclipboard.ScreenshotToClipboard"
+    ]
+  },
+  "mixins": [
+    "screenshotclipboard.mixins.json"
+  ],
+
+  "depends": {
+    "fabricloader": ">=0.4.0",
+    "fabric": "*"
+  },
+
+  "custom": {
+    "modmenu:clientsideOnly": true
+  }
+}
