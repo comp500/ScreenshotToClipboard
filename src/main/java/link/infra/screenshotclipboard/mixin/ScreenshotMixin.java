@@ -24,7 +24,7 @@ public class ScreenshotMixin {
 
 	// Inject after saving the image
 	// Lambda in method_1662 is called method_1661
-	@Inject(at = @At(value = "INVOKE", target = "Ljava/util/function/Consumer;accept(Ljava/lang/Object;)V", ordinal = 0), method = "method_1661")
+	@Inject(at = @At(value = "INVOKE", target = "Ljava/util/function/Consumer;accept(Ljava/lang/Object;)V", ordinal = 0, remap = false), method = "method_1661")
 	private static void screenshotCapturedMac(NativeImage nativeImage_1, File file_1, Consumer consumer_1, CallbackInfo ci) {
 		MacOSCompat.doCopyMacOS(file_1.getAbsolutePath());
 	}
