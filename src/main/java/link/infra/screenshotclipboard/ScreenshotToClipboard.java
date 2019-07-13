@@ -23,12 +23,7 @@ public class ScreenshotToClipboard implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
-		// A bit dangerous, but shouldn't technically cause any issues on most platforms - headless mode just disables the awt API
-		// Minecraft usually has this enabled because it's using GLFW rather than AWT/Swing
-		// Also causes problems on macOS, see: https://github.com/MinecraftForge/MinecraftForge/pull/5591#issuecomment-470805491
-		if (!MinecraftClient.IS_SYSTEM_MAC) {
-			System.setProperty("java.awt.headless", "false");
-		}
+		// Do nothing - the AWT hack has moved to AWTHackMixin
 	}
 
 	private static boolean useHackyMode = true;

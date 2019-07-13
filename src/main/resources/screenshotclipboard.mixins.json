@@ -6,7 +6,8 @@
   ],
   "client": [
     "ScreenshotMixin",
-    "NativeImageMixin"
+    "NativeImageMixin",
+    "AWTHackMixin"
   ],
   "injectors": {
     "defaultRequire": 1
