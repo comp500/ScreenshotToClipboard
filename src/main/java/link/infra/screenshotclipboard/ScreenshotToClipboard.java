@@ -110,7 +110,7 @@ public class ScreenshotToClipboard implements ModInitializer {
 			Transferable trans = getTransferableImage(bufImg);
 			Clipboard c = Toolkit.getDefaultToolkit().getSystemClipboard();
 			c.setContents(trans, null);
-		}).start();
+		}, "Screenshot to Clipboard Copy").start();
 	}
 
 	private static Transferable getTransferableImage(final BufferedImage bufferedImage) {
