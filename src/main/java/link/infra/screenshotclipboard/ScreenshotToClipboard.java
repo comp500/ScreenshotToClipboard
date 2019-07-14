@@ -36,6 +36,9 @@ public class ScreenshotToClipboard {
 			// Also causes problems on macOS, see: https://github.com/MinecraftForge/MinecraftForge/pull/5591#issuecomment-470805491
 			if (!Minecraft.IS_RUNNING_ON_MAC) {
 				System.setProperty("java.awt.headless", "false");
+				LOGGER.debug("java.awt.headless property set to false");
+				// Ensure AWT is loaded by forcing loadLibraries() to be called, will cause a HeadlessException if someone else already called AWT
+				Toolkit.getDefaultToolkit().getSystemClipboard();
 			}
 			MinecraftForge.EVENT_BUS.register(this);
 		});
@@ -128,7 +131,7 @@ public class ScreenshotToClipboard {
 			Transferable trans = getTransferableImage(bufImg);
 			Clipboard c = Toolkit.getDefaultToolkit().getSystemClipboard();
 			c.setContents(trans, null);
-		}).start();
+		}, "Screenshot to Clipboard Copy").start();
 	}
 
 	private Transferable getTransferableImage(final BufferedImage bufferedImage) {
