@@ -31,16 +31,16 @@ public class ScreenshotToClipboard {
 
 	public ScreenshotToClipboard() {
 		DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> {
-			// A bit dangerous, but shouldn't technically cause any issues on most platforms - headless mode just disables the awt API
-			// Minecraft usually has this enabled because it's using GLFW rather than AWT/Swing
-			// Also causes problems on macOS, see: https://github.com/MinecraftForge/MinecraftForge/pull/5591#issuecomment-470805491
-			if (!Minecraft.IS_RUNNING_ON_MAC) {
-				System.setProperty("java.awt.headless", "false");
-				LOGGER.debug("java.awt.headless property set to false");
-				// Ensure AWT is loaded by forcing loadLibraries() to be called, will cause a HeadlessException if someone else already called AWT
-				Toolkit.getDefaultToolkit().getSystemClipboard();
-			}
 			MinecraftForge.EVENT_BUS.register(this);
+			if (Minecraft.IS_RUNNING_ON_MAC) {
+				// Test that the coremod was run properly
+				// Ensure AWT is loaded by forcing loadLibraries() to be called, will cause a HeadlessException if someone else already called AWT
+				try {
+					Toolkit.getDefaultToolkit().getSystemClipboard();
+				} catch (HeadlessException e) {
+					LOGGER.warn("java.awt.headless property was not set properly!");
+				}
+			}
 		});
 	}
 
