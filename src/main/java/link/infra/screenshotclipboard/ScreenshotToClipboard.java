@@ -118,9 +118,10 @@ public class ScreenshotToClipboard {
 			DataBufferByte buf = new DataBufferByte(imageData, imageData.length);
 			// This is RGBA but it doesn't work with ColorModel.getRGBdefault for some reason!
 			ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_sRGB);
-			int[] nBits = {8, 8, 8, 8};
-			int[] bOffs = {0, 1, 2, 3}; // is this efficient, no transformation is being done?
-			ColorModel cm = new ComponentColorModel(cs, nBits, true, false,
+			// Ignore the alpha channel, due to JDK-8204187
+			int[] nBits = {8, 8, 8};
+			int[] bOffs = {0, 1, 2}; // is this efficient, no transformation is being done?
+			ColorModel cm = new ComponentColorModel(cs, nBits, false, false,
 					Transparency.TRANSLUCENT,
 					DataBuffer.TYPE_BYTE);
 			BufferedImage bufImg = new BufferedImage(cm, Raster.createInterleavedRaster(buf,
