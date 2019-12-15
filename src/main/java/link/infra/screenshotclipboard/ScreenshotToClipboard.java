@@ -1,7 +1,6 @@
 package link.infra.screenshotclipboard;
 
 import link.infra.screenshotclipboard.mixin.NativeImageMixin;
-import net.fabricmc.api.ModInitializer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.texture.NativeImage;
 import org.apache.logging.log4j.LogManager;
@@ -18,13 +17,8 @@ import java.awt.image.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-public class ScreenshotToClipboard implements ModInitializer {
+public class ScreenshotToClipboard {
 	private static final Logger LOGGER = LogManager.getFormatterLogger("ScreenshotToClipboard");
-
-	@Override
-	public void onInitialize() {
-		// Do nothing - the AWT hack has moved to AWTHackMixin
-	}
 
 	private static boolean useHackyMode = true;
 
@@ -68,6 +62,8 @@ public class ScreenshotToClipboard implements ModInitializer {
 
 	// This method is theoretically faster than safeGetPixelsRGBA but it might explode violently
 	private static ByteBuffer hackyUnsafeGetPixelsRGBA(NativeImage img) throws RuntimeException {
+		// IntellIJ be like You Can't Do This!!!
+		//noinspection ConstantConditions
 		long imagePointer = ((NativeImageMixin) (Object) img).getPointer();
 		ByteBuffer buf = MemoryUtil.memByteBufferSafe(imagePointer, img.getWidth() * img.getHeight() * 4);
 		if (buf == null) {
@@ -81,7 +77,7 @@ public class ScreenshotToClipboard implements ModInitializer {
 		byteBuffer.order(ByteOrder.LITTLE_ENDIAN); // is this system dependent? TEST!!
 		for (int y = 0; y < img.getHeight(); y++) {
 			for (int x = 0; x < img.getWidth(); x++) {
-				byteBuffer.putInt(img.getPixelRGBA(x, y));
+				byteBuffer.putInt(img.getPixelRgba(x, y));
 			}
 		}
 		return byteBuffer;

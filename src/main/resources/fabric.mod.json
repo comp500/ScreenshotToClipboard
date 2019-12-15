@@ -10,26 +10,23 @@
   ],
   "contact": {
     "homepage": "https://www.curseforge.com/minecraft/mc-mods/screenshot-to-clipboard-fabric",
-    "sources": "https://github.com/comp500/ScreenshotToClipboard/tree/1.14-fabric",
+    "sources": "https://github.com/comp500/ScreenshotToClipboard/tree/1.15-fabric",
     "issues": "https://github.com/comp500/ScreenshotToClipboard/issues"
   },
 
   "license": "MIT",
   "icon": "assets/screenshotclipboard/icon.png",
 
-  "environment": "*",
-  "entrypoints": {
-    "main": [
-      "link.infra.screenshotclipboard.ScreenshotToClipboard"
-    ]
-  },
+  "environment": "client",
+  "entrypoints": {},
   "mixins": [
     "screenshotclipboard.mixins.json"
   ],
 
   "depends": {
-    "fabricloader": ">=0.4.0",
-    "fabric": "*"
+    "fabricloader": ">=0.7.2",
+    "fabric": "*",
+    "minecraft": "1.15.x"
   },
 
   "custom": {
