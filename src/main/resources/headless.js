@@ -17,8 +17,8 @@ function initializeCoreMod() {
                 var api = Java.type('net.minecraftforge.coremod.api.ASMAPI');
 
                 var methods = classNode.methods;
-                // init() method
-                var targetMethod = api.mapMethod("func_71384_a");
+                // run() method
+                var targetMethod = api.mapMethod("func_99999_d");
 
                 for (m in methods)
                 {
