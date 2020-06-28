@@ -4,7 +4,7 @@ function initializeCoreMod() {
         'coremodone': {
             'target': {
                 'type': 'CLASS',
-                'name': 'net.minecraft.client.Minecraft'
+                'name': 'net.minecraft.client.main.Main'
             },
             'transformer': function (classNode) {
             	var asmHandler = "link/infra/screenshotclipboard/HeadlessFix";
@@ -17,8 +17,8 @@ function initializeCoreMod() {
                 var api = Java.type('net.minecraftforge.coremod.api.ASMAPI');
 
                 var methods = classNode.methods;
-                // run() method
-                var targetMethod = api.mapMethod("func_99999_d");
+                // Doesn't have any mappings
+                var targetMethod = "main";
 
                 for (m in methods)
                 {
