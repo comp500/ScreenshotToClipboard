@@ -27,8 +27,8 @@ public class ScreenshotToClipboard {
 			return;
 		}
 
-		// Only allow RGBA
-		if (img.getFormat() != NativeImage.Format.RGBA) {
+		// Only allow ABGR
+		if (img.getFormat() != NativeImage.Format.ABGR) {
 			return;
 		}
 
@@ -36,16 +36,16 @@ public class ScreenshotToClipboard {
 		ByteBuffer byteBuffer = null;
 		if (useHackyMode) {
 			try {
-				byteBuffer = hackyUnsafeGetPixelsRGBA(img);
+				byteBuffer = hackyUnsafeGetPixelsABGR(img);
 			} catch (Exception e) {
 				LOGGER.warn("An error has occurred trying to take a screenshot using Hacky Mode (tm), Safe Mode will be used", e);
 				useHackyMode = false;
 			}
 			if (!useHackyMode) {
-				byteBuffer = safeGetPixelsRGBA(img);
+				byteBuffer = safeGetPixelsABGR(img);
 			}
 		} else {
-			byteBuffer = safeGetPixelsRGBA(img);
+			byteBuffer = safeGetPixelsABGR(img);
 		}
 
 		byte[] array;
@@ -60,8 +60,8 @@ public class ScreenshotToClipboard {
 		doCopy(array, img.getWidth(), img.getHeight());
 	}
 
-	// This method is theoretically faster than safeGetPixelsRGBA but it might explode violently
-	private static ByteBuffer hackyUnsafeGetPixelsRGBA(NativeImage img) throws RuntimeException {
+	// This method is theoretically faster than safeGetPixelsABGR but it might explode violently
+	private static ByteBuffer hackyUnsafeGetPixelsABGR(NativeImage img) throws RuntimeException {
 		// IntellIJ be like You Can't Do This!!!
 		//noinspection ConstantConditions
 		long imagePointer = ((NativeImageMixin) (Object) img).getPointer();
@@ -72,12 +72,12 @@ public class ScreenshotToClipboard {
 		return buf;
 	}
 
-	private static ByteBuffer safeGetPixelsRGBA(NativeImage img) {
+	private static ByteBuffer safeGetPixelsABGR(NativeImage img) {
 		ByteBuffer byteBuffer = ByteBuffer.allocate(img.getWidth() * img.getHeight() * 4);
 		byteBuffer.order(ByteOrder.LITTLE_ENDIAN); // is this system dependent? TEST!!
 		for (int y = 0; y < img.getHeight(); y++) {
 			for (int x = 0; x < img.getWidth(); x++) {
-				byteBuffer.putInt(img.getPixelRgba(x, y));
+				byteBuffer.putInt(img.getPixelColor(x, y));
 			}
 		}
 		return byteBuffer;
@@ -86,7 +86,6 @@ public class ScreenshotToClipboard {
 	private static void doCopy(byte[] imageData, int width, int height) {
 		new Thread(() -> {
 			DataBufferByte buf = new DataBufferByte(imageData, imageData.length);
-			// This is RGBA but it doesn't work with ColorModel.getRGBdefault for some reason!
 			ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_sRGB);
 			// Ignore the alpha channel, due to JDK-8204187
 			int[] nBits = {8, 8, 8};
