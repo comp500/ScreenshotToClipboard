@@ -40,8 +40,6 @@ public class ScreenshotToClipboard {
 	private static int savedWidth;
 	private static int savedHeight;
 	private static ScreenshotEvent savedEvent;
-	//TODO: All one line.
-	//TODO: Copy that specific screenshot?
 	
 	@SubscribeEvent
 	public void handleChat(ClientChatEvent event)
