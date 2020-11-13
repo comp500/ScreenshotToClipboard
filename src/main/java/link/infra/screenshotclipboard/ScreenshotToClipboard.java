@@ -40,7 +40,8 @@ public class ScreenshotToClipboard {
 	private static int savedWidth;
 	private static int savedHeight;
 	private static ScreenshotEvent savedEvent;
-	
+	//TODO: All one line.
+	//TODO: Copy that specific screenshot?
 	
 	@SubscribeEvent
 	public void handleChat(ClientChatEvent event)
@@ -61,7 +62,6 @@ public class ScreenshotToClipboard {
 			
 			Style copiedStyle = new Style();
 			copiedStyle.setColor(TextFormatting.GREEN);
-			copiedStyle.setBold(true);
 			
 			StringTextComponent copiedText = new StringTextComponent("copied!");
 			copiedText.setStyle(copiedStyle);
@@ -100,14 +100,17 @@ public class ScreenshotToClipboard {
 		yesStyle.setBold(true);
 		yesStyle.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/copyscreenshot"));
 		
-		StringTextComponent hoverText = new StringTextComponent("Click to copy screenshot");
-		Style hoverStyle = new Style();
-		hoverStyle.setColor(TextFormatting.WHITE);
-		hoverText.setStyle(hoverStyle);
+		StringTextComponent hoverText = new StringTextComponent("Click to copy ");
+		StringTextComponent latest = new StringTextComponent("latest");
+		latest.setStyle(new Style().setBold(true));
+		StringTextComponent hoverText2 = new StringTextComponent(" screenshot");
+		
+		hoverText.appendSibling(latest);
+		hoverText.appendSibling(hoverText2);
 		
 		yesStyle.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, hoverText));
 		
-		StringTextComponent base = new StringTextComponent("Screenshot taken!\nCopy to clipboard: ");
+		StringTextComponent base = new StringTextComponent("Screenshot taken! ");
 		StringTextComponent yes = new StringTextComponent("[Copy]");
 		yes.setStyle(yesStyle);
 		
