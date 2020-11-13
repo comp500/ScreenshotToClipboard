@@ -2,7 +2,14 @@ package link.infra.screenshotclipboard;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.NativeImage;
+import net.minecraft.util.text.ChatType;
+import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.util.text.Style;
+import net.minecraft.util.text.TextFormatting;
+import net.minecraft.util.text.event.ClickEvent;
+import net.minecraft.util.text.event.HoverEvent;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.ClientChatEvent;
 import net.minecraftforge.client.event.ScreenshotEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -28,7 +35,47 @@ import java.nio.ByteOrder;
 @Mod("screenshotclipboard")
 public class ScreenshotToClipboard {
 	private static final Logger LOGGER = LogManager.getLogger();
-
+	
+	private static byte[] savedArray;
+	private static int savedWidth;
+	private static int savedHeight;
+	private static ScreenshotEvent savedEvent;
+	
+	
+	@SubscribeEvent
+	public void handleChat(ClientChatEvent event)
+	{
+		String message = event.getMessage();
+		if (message.equals("/copyscreenshot"))
+		{
+			if (Minecraft.IS_RUNNING_ON_MAC)
+			{
+				MacOSCompat.handleScreenshot(savedEvent);
+			}
+			else
+			{
+				doCopy(savedArray, savedWidth, savedHeight);
+			}
+			
+			StringTextComponent base = new StringTextComponent("Screenshot ");
+			
+			Style copiedStyle = new Style();
+			copiedStyle.setColor(TextFormatting.GREEN);
+			copiedStyle.setBold(true);
+			
+			StringTextComponent copiedText = new StringTextComponent("copied!");
+			copiedText.setStyle(copiedStyle);
+			
+			base.appendSibling(copiedText);
+			Minecraft.getInstance().ingameGUI.addChatMessage(ChatType.SYSTEM, base);
+			
+			if (event.isCancelable())
+			{
+				event.setCanceled(true);
+			}
+		}
+	}
+	
 	public ScreenshotToClipboard() {
 		DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> {
 			MinecraftForge.EVENT_BUS.register(this);
@@ -48,11 +95,25 @@ public class ScreenshotToClipboard {
 
 	@SubscribeEvent
 	public void handleScreenshot(ScreenshotEvent event) {
-		if (Minecraft.IS_RUNNING_ON_MAC) {
-			MacOSCompat.handleScreenshot(event);
-			return;
-		}
-
+		Style yesStyle = new Style();
+		yesStyle.setColor(TextFormatting.GREEN);
+		yesStyle.setBold(true);
+		yesStyle.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/copyscreenshot"));
+		
+		StringTextComponent hoverText = new StringTextComponent("Click to copy screenshot");
+		Style hoverStyle = new Style();
+		hoverStyle.setColor(TextFormatting.WHITE);
+		hoverText.setStyle(hoverStyle);
+		
+		yesStyle.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, hoverText));
+		
+		StringTextComponent base = new StringTextComponent("Screenshot taken!\nCopy to clipboard: ");
+		StringTextComponent yes = new StringTextComponent("[Copy]");
+		yes.setStyle(yesStyle);
+		
+		base.appendSibling(yes);
+		event.setResultMessage(base);
+		
 		NativeImage img = event.getImage();
 		// Only allow RGBA
 		if (img.getFormat() != NativeImage.PixelFormat.RGBA) {
@@ -83,8 +144,11 @@ public class ScreenshotToClipboard {
 			array = new byte[img.getHeight() * img.getWidth() * 4];
 			byteBuffer.get(array);
 		}
-
-		doCopy(array, img.getWidth(), img.getHeight());
+		
+		savedArray = array;
+		savedWidth = img.getWidth();
+		savedHeight = img.getHeight();
+		savedEvent = event;
 	}
 
 	private Field imagePointerField = null;
