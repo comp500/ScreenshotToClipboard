@@ -22,7 +22,7 @@ public class ScreenshotToClipboard {
 	private static final Logger LOGGER = LogManager.getFormatterLogger("ScreenshotToClipboard");
 
 	// TODO: fabrishot support
-	// TODO: test/port to 1.17
+	// TODO: test/port to 1.17; constrain accepted versions as necessary
 
 	public static void init() {
 		if (!MinecraftClient.IS_SYSTEM_MAC) {

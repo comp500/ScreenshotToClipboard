@@ -23,16 +23,6 @@ public class AWTHackMixin {
 			System.out.println("[Screenshot to Clipboard] Setting java.awt.headless to false");
 			System.setProperty("java.awt.headless", "false");
 		}
-
-		// TODO: is this necessary?
-//		try {
-//			Class<?> clazz = Class.forName("java.awt.Toolkit");
-//			Field field = clazz.getDeclaredField("loaded");
-//			field.setAccessible(true);
-//			field.setBoolean(null, true);
-//		} catch (ClassNotFoundException | IllegalAccessException | NoSuchFieldException e) {
-//			e.printStackTrace();
-//		}
 	}
 
 }
