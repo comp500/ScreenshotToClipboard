@@ -1,0 +1,22 @@
+modLoader="javafml"
+loaderVersion="[35,)"
+
+issueTrackerURL="https://github.com/comp500/ScreenshotToClipboard/issues"
+license="MIT"
+
+[[mods]]
+modId="screenshotclipboard"
+version="${version}"
+displayName="Screenshot to Clipboard"
+displayURL="https://github.com/comp500/ScreenshotToClipboard"
+authors="comp500"
+description='''
+Any time you take a screenshot in the game, the image data is copied to the clipboard. You can then paste this anywhere (e.g. Discord) to upload the image and share it with others.
+'''
+
+[[dependencies.screenshotclipboard]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.16.2,)"
+ordering = "NONE"
+side = "BOTH"

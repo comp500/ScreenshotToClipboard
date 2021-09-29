@@ -1,0 +1,4 @@
+tiny	2	0	named	intermediary
+c	net/minecraft/client/util/ScreenshotUtils	net/minecraft/util/ScreenShotHelper
+	m	(Lnet/minecraft/client/renderer/texture/NativeImage;Ljava/io/File;Ljava/io/File;Lnet/minecraftforge/client/event/ScreenshotEvent;Ljava/util/function/Consumer;)V	method_1661	lambda$saveScreenshotRaw$2
+	m	(Lnet/minecraft/client/renderer/texture/NativeImage;Ljava/io/File;Ljava/lang/Object;Ljava/util/function/Consumer;)V	method_1661	lambda$saveScreenshotRaw$2

@@ -1,0 +1,13 @@
+{
+	"required": true,
+	"package": "link.infra.screenshotclipboard.mixin",
+	"compatibilityLevel": "JAVA_8",
+	"mixins": [
+	],
+	"client": [
+		"ScreenshotMixinMacOS"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

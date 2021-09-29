@@ -1,0 +1,15 @@
+{
+	"required": true,
+	"package": "link.infra.screenshotclipboard.mixin",
+	"minVersion": "0.8",
+	"compatibilityLevel": "JAVA_8",
+	"mixins": [
+	],
+	"client": [
+		"AWTHackMixin",
+		"NativeImagePointerAccessor"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

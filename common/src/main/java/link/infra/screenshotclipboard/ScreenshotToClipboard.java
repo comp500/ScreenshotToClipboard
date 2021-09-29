@@ -1,6 +1,6 @@
 package link.infra.screenshotclipboard;
 
-import link.infra.screenshotclipboard.mixin.NativeImageMixin;
+import link.infra.screenshotclipboard.mixin.NativeImagePointerAccessor;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.texture.NativeImage;
 import org.apache.logging.log4j.LogManager;
@@ -18,11 +18,27 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 public class ScreenshotToClipboard {
+	public static final String MOD_ID = "screenshotclipboard";
 	private static final Logger LOGGER = LogManager.getFormatterLogger("ScreenshotToClipboard");
+
+	// TODO: fabrishot support
+	// TODO: test/port to 1.17
+
+	public static void init() {
+		if (!MinecraftClient.IS_SYSTEM_MAC) {
+			// Test that the mixin was run properly
+			// Ensure AWT is loaded by forcing loadLibraries() to be called, will cause a HeadlessException if someone else already loaded AWT
+			try {
+				Toolkit.getDefaultToolkit().getSystemClipboard();
+			} catch (HeadlessException e) {
+				LOGGER.warn("java.awt.headless property was not set properly!");
+			}
+		}
+	}
 
 	private static boolean useHackyMode = true;
 
-	public static void handleScreenshot(NativeImage img) {
+	public static void handleScreenshotAWT(NativeImage img) {
 		if (MinecraftClient.IS_SYSTEM_MAC) {
 			return;
 		}
@@ -62,9 +78,9 @@ public class ScreenshotToClipboard {
 
 	// This method is theoretically faster than safeGetPixelsABGR but it might explode violently
 	private static ByteBuffer hackyUnsafeGetPixelsABGR(NativeImage img) throws RuntimeException {
-		// IntellIJ be like You Can't Do This!!!
+		// IntellIJ doesn't like this
 		//noinspection ConstantConditions
-		long imagePointer = ((NativeImageMixin) (Object) img).getPointer();
+		long imagePointer = ((NativeImagePointerAccessor) (Object) img).getPointer();
 		ByteBuffer buf = MemoryUtil.memByteBufferSafe(imagePointer, img.getWidth() * img.getHeight() * 4);
 		if (buf == null) {
 			throw new RuntimeException("Invalid image");
