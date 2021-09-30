@@ -20,9 +20,6 @@ public class ScreenshotToClipboard {
 	public static final String MOD_ID = "screenshotclipboard";
 	private static final Logger LOGGER = LogManager.getFormatterLogger("ScreenshotToClipboard");
 
-	// TODO: fabrishot support
-	// TODO: test/port to 1.17; constrain accepted versions as necessary
-
 	public static void init() {
 		if (!MinecraftClient.IS_SYSTEM_MAC) {
 			// Test that the mixin was run properly
