@@ -11,8 +11,16 @@ architectury {
 	fabric()
 }
 
+repositories {
+	maven {
+		url = "https://api.modrinth.com/maven"
+	}
+}
+
 dependencies {
 	modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
+	modCompileOnly "maven.modrinth:fabrishot:${rootProject.fabrishot_version}"
+	modCompileOnly fabricApi.module("fabric-api-base", rootProject.fabric_version)
 
 	implementation(project(path: ":common")) {
 		transitive = false

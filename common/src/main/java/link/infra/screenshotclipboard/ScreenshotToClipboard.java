@@ -15,7 +15,6 @@ import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.image.*;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 public class ScreenshotToClipboard {
 	public static final String MOD_ID = "screenshotclipboard";
@@ -36,8 +35,6 @@ public class ScreenshotToClipboard {
 		}
 	}
 
-	private static boolean useHackyMode = true;
-
 	public static void handleScreenshotAWT(NativeImage img) {
 		if (MinecraftClient.IS_SYSTEM_MAC) {
 			return;
@@ -45,39 +42,10 @@ public class ScreenshotToClipboard {
 
 		// Only allow ABGR
 		if (img.getFormat() != NativeImage.Format.ABGR) {
+			LOGGER.warn("Failed to capture screenshot: wrong format");
 			return;
 		}
 
-		// Convert NativeImage to BufferedImage
-		ByteBuffer byteBuffer = null;
-		if (useHackyMode) {
-			try {
-				byteBuffer = hackyUnsafeGetPixelsABGR(img);
-			} catch (Exception e) {
-				LOGGER.warn("An error has occurred trying to take a screenshot using Hacky Mode (tm), Safe Mode will be used", e);
-				useHackyMode = false;
-			}
-			if (!useHackyMode) {
-				byteBuffer = safeGetPixelsABGR(img);
-			}
-		} else {
-			byteBuffer = safeGetPixelsABGR(img);
-		}
-
-		byte[] array;
-		if (byteBuffer.hasArray()) {
-			array = byteBuffer.array();
-		} else {
-			// can't use .array() because unsafe retrieval references the volatile bytes directly!!
-			array = new byte[img.getHeight() * img.getWidth() * 4];
-			byteBuffer.get(array);
-		}
-
-		doCopy(array, img.getWidth(), img.getHeight());
-	}
-
-	// This method is theoretically faster than safeGetPixelsABGR but it might explode violently
-	private static ByteBuffer hackyUnsafeGetPixelsABGR(NativeImage img) throws RuntimeException {
 		// IntellIJ doesn't like this
 		//noinspection ConstantConditions
 		long imagePointer = ((NativeImagePointerAccessor) (Object) img).getPointer();
@@ -85,21 +53,28 @@ public class ScreenshotToClipboard {
 		if (buf == null) {
 			throw new RuntimeException("Invalid image");
 		}
-		return buf;
+
+		handleScreenshotAWT(buf, img.getWidth(), img.getHeight(), 4);
 	}
 
-	private static ByteBuffer safeGetPixelsABGR(NativeImage img) {
-		ByteBuffer byteBuffer = ByteBuffer.allocate(img.getWidth() * img.getHeight() * 4);
-		byteBuffer.order(ByteOrder.LITTLE_ENDIAN); // is this system dependent? TEST!!
-		for (int y = 0; y < img.getHeight(); y++) {
-			for (int x = 0; x < img.getWidth(); x++) {
-				byteBuffer.putInt(img.getPixelColor(x, y));
-			}
+	public static void handleScreenshotAWT(ByteBuffer byteBuffer, int width, int height, int components) {
+		if (MinecraftClient.IS_SYSTEM_MAC) {
+			return;
 		}
-		return byteBuffer;
+
+		byte[] array;
+		if (byteBuffer.hasArray()) {
+			array = byteBuffer.array();
+		} else {
+			// can't use .array() as the buffer is not array-backed
+			array = new byte[height * width * components];
+			byteBuffer.get(array);
+		}
+
+		doCopy(array, width, height, components);
 	}
 
-	private static void doCopy(byte[] imageData, int width, int height) {
+	private static void doCopy(byte[] imageData, int width, int height, int components) {
 		new Thread(() -> {
 			DataBufferByte buf = new DataBufferByte(imageData, imageData.length);
 			ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_sRGB);
@@ -111,7 +86,7 @@ public class ScreenshotToClipboard {
 					DataBuffer.TYPE_BYTE);
 			BufferedImage bufImg = new BufferedImage(cm, Raster.createInterleavedRaster(buf,
 					width, height,
-					width * 4, 4,
+					width * components, components,
 					bOffs, null), false, null);
 
 			Transferable trans = getTransferableImage(bufImg);
