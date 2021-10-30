@@ -102,6 +102,7 @@ if (System.getenv("GITHUB_TOKEN")) {
 		repo = rootProject.github_repo_name
 		tagName = rootProject.mod_version
 		releaseName = "Release ${rootProject.mod_version}"
+		targetCommitish = "1.16-arch"
 		draft = false
 		body = rootProject.ext.changelogGithub
 		token System.getenv("GITHUB_TOKEN")
