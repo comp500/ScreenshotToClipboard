@@ -1,5 +1,8 @@
 plugins {
 	id "com.github.johnrengelman.shadow" version "5.0.0"
+
+	id "com.modrinth.minotaur" version "1.2.1"
+	id "com.matthewprenger.cursegradle" version "1.4.0"
 }
 
 configurations {
@@ -92,4 +95,63 @@ publishing {
 	repositories {
 		// Add repositories to publish to here.
 	}
+}
+
+import com.modrinth.minotaur.TaskModrinthUpload
+def supportedVersions = [
+		"1.16.2", "1.16.3", "1.16.4", "1.16.5"]
+def versionSupportName = "(Forge 1.16)"
+
+task publishModrinth(type: TaskModrinthUpload) {
+	dependsOn remapJar
+	onlyIf {
+		System.getenv("MODRINTH_TOKEN")
+	}
+
+	token = System.getenv("MODRINTH_TOKEN")
+	projectId = rootProject.modrinth_id
+	versionNumber = rootProject.mod_version + "+forge"
+	uploadFile = remapJar
+	versionName = rootProject.mod_version + " " + versionSupportName
+	for (version in supportedVersions) {
+		addGameVersion(version)
+	}
+	addLoader("forge")
+	detectLoaders = false
+	changelog = rootProject.ext.changelog
+}
+
+publish.dependsOn(publishModrinth)
+
+if (System.getenv("CURSEFORGE_TOKEN")) {
+	curseforge {
+		apiKey = System.getenv("CURSEFORGE_TOKEN")
+		project {
+			id = rootProject.curseforge_id_forge
+			releaseType = "release"
+
+			mainArtifact(remapJar) {
+				displayName = rootProject.mod_version + " " + versionSupportName
+			}
+			for (version in supportedVersions) {
+				addGameVersion(version)
+			}
+			addGameVersion("Forge")
+			changelog = rootProject.ext.changelog
+			changelogType = "markdown"
+		}
+	}
+
+	publish.dependsOn(tasks.named("curseforge"))
+}
+
+configurations {
+	remapJarOutput {
+		canBeConsumed = true
+		canBeResolved = false
+	}
+}
+
+artifacts {
+	remapJarOutput(remapJar) // For consumption by github release
 }
