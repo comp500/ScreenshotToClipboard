@@ -106,7 +106,7 @@ if (System.getenv("GITHUB_TOKEN")) {
 		body = rootProject.ext.changelogGithub
 		token System.getenv("GITHUB_TOKEN")
 		releaseAssets.from(rootProject.configurations.githubReleaseJars)
-		dryRun = true
+		overwrite = true
 	}
 
 	publish.dependsOn(tasks.githubRelease)
