@@ -1,5 +1,6 @@
 package link.infra.screenshotclipboard;
 
+import link.infra.screenshotclipboard.common.ScreenshotToClipboard;
 import net.minecraftforge.client.event.ScreenshotEvent;
 import net.minecraftforge.common.MinecraftForge;
 

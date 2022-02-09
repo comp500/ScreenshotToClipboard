@@ -1,4 +1,4 @@
-package link.infra.screenshotclipboard;
+package link.infra.screenshotclipboard.common;
 
 import ca.weblite.objc.Client;
 import ca.weblite.objc.Proxy;

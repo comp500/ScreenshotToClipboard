@@ -1,5 +1,7 @@
 package link.infra.screenshotclipboard;
 
+import link.infra.screenshotclipboard.common.MacOSCompat;
+import link.infra.screenshotclipboard.common.ScreenshotToClipboard;
 import me.ramidzkh.fabrishot.event.FramebufferCaptureCallback;
 import me.ramidzkh.fabrishot.event.ScreenshotSaveCallback;
 

@@ -1,4 +1,4 @@
-package link.infra.screenshotclipboard.mixin;
+package link.infra.screenshotclipboard.common.mixin;
 
 import net.minecraft.client.texture.NativeImage;
 import org.spongepowered.asm.mixin.Mixin;

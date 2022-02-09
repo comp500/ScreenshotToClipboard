@@ -1,4 +1,4 @@
-package link.infra.screenshotclipboard.mixin;
+package link.infra.screenshotclipboard.common.mixin;
 
 import net.minecraft.client.main.Main;
 import org.spongepowered.asm.mixin.Mixin;
@@ -11,7 +11,7 @@ import java.util.Locale;
 @Mixin(Main.class)
 public class AWTHackMixin {
 	// Inject as early as possible (but after Main statics execute), and disable java.awt.headless on non-macOS systems
-	@Inject(method = "main", at = @At("HEAD"))
+	@Inject(method = "main", at = @At("HEAD"), remap = false)
 	private static void awtHack(CallbackInfo ci) {
 		// A bit dangerous, but shouldn't technically cause any issues on most platforms - headless mode just disables the awt API
 		// Minecraft usually has this enabled because it's using GLFW rather than AWT/Swing

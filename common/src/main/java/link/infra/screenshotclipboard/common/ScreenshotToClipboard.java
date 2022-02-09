@@ -1,6 +1,6 @@
-package link.infra.screenshotclipboard;
+package link.infra.screenshotclipboard.common;
 
-import link.infra.screenshotclipboard.mixin.NativeImagePointerAccessor;
+import link.infra.screenshotclipboard.common.mixin.NativeImagePointerAccessor;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.texture.NativeImage;
 import org.apache.logging.log4j.LogManager;
@@ -37,8 +37,8 @@ public class ScreenshotToClipboard {
 			return;
 		}
 
-		// Only allow ABGR
-		if (img.getFormat() != NativeImage.Format.ABGR) {
+		// Only allow RGBA
+		if (img.getFormat() != NativeImage.Format.RGBA) {
 			LOGGER.warn("Failed to capture screenshot: wrong format");
 			return;
 		}

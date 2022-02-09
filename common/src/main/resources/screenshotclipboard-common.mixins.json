@@ -1,6 +1,6 @@
 {
 	"required": true,
-	"package": "link.infra.screenshotclipboard.mixin",
+	"package": "link.infra.screenshotclipboard.common.mixin",
 	"minVersion": "0.8",
 	"compatibilityLevel": "JAVA_8",
 	"mixins": [

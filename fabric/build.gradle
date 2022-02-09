@@ -1,17 +1,21 @@
 plugins {
-	id "com.github.johnrengelman.shadow" version "5.0.0"
+	id "com.github.johnrengelman.shadow" version "7.1.2"
 
 	id "com.modrinth.minotaur" version "1.2.1"
 	id "com.matthewprenger.cursegradle" version "1.4.0"
 }
 
-configurations {
-	shadowCommon // Don't use shadow from the shadow plugin because we don't want IDEA to index this.
-}
-
 architectury {
 	platformSetupLoomIde()
 	fabric()
+}
+
+configurations {
+	common
+	shadowCommon // Don't use shadow from the shadow plugin because we don't want IDEA to index this.
+	compileClasspath.extendsFrom common
+	runtimeClasspath.extendsFrom common
+	developmentFabric.extendsFrom common
 }
 
 repositories {
@@ -25,15 +29,8 @@ dependencies {
 	modCompileOnly "maven.modrinth:fabrishot:${rootProject.fabrishot_version}"
 	modCompileOnly fabricApi.module("fabric-api-base", rootProject.fabric_version)
 
-	implementation(project(path: ":common")) {
-		transitive = false
-	}
-	developmentFabric(project(path: ":common")) {
-		transitive = false
-	}
-	shadowCommon(project(path: ":common", configuration: "transformProductionFabric")) {
-		transitive = false
-	}
+	common(project(path: ":common", configuration: "namedElements")) { transitive false }
+	shadowCommon(project(path: ":common", configuration: "transformProductionFabric")) { transitive false }
 }
 
 processResources {
@@ -59,27 +56,23 @@ jar {
 	classifier "dev"
 }
 
-java {
-	withSourcesJar()
-}
-
 sourcesJar {
 	def commonSources = project(":common").sourcesJar
 	dependsOn commonSources
 	from commonSources.archiveFile.map { zipTree(it) }
 }
 
+components.java {
+	withVariantsFromConfiguration(project.configurations.shadowRuntimeElements) {
+		skip()
+	}
+}
+
 publishing {
 	publications {
 		mavenFabric(MavenPublication) {
 			artifactId = rootProject.archives_base_name + "-" + project.name
-			// add all the jars that should be included when publishing to maven
-			artifact(remapJar) {
-				classifier null
-			}
-			artifact(sourcesJar) {
-				builtBy remapSourcesJar
-			}
+			from components.java
 		}
 	}
 
@@ -92,8 +85,8 @@ publishing {
 import com.modrinth.minotaur.TaskModrinthUpload
 // TODO: infer from fabric.mod.json?!
 def supportedVersions = [
-		"1.15", "1.15.1", "1.15.2", "1.16", "1.16.1", "1.16.2", "1.16.3", "1.16.4", "1.16.5", "1.17", "1.17.1"]
-def versionSupportName = "(Fabric 1.15+)"
+		"1.17", "1.17.1", "1.18", "1.18.1"]
+def versionSupportName = "(Fabric 1.17+)"
 
 task publishModrinth(type: TaskModrinthUpload) {
 	dependsOn remapJar

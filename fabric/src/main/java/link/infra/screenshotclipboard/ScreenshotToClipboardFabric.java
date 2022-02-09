@@ -1,5 +1,6 @@
 package link.infra.screenshotclipboard;
 
+import link.infra.screenshotclipboard.common.ScreenshotToClipboard;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 

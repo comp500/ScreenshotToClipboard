@@ -1,8 +1,8 @@
 package link.infra.screenshotclipboard.mixin;
 
-import link.infra.screenshotclipboard.ScreenshotToClipboard;
+import link.infra.screenshotclipboard.common.ScreenshotToClipboard;
 import net.minecraft.client.texture.NativeImage;
-import net.minecraft.client.util.ScreenshotUtils;
+import net.minecraft.client.util.ScreenshotRecorder;
 import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.io.File;
 import java.util.function.Consumer;
 
-@Mixin(ScreenshotUtils.class)
+@Mixin(ScreenshotRecorder.class)
 public class ScreenshotMixinAWT {
 	// Lambda in method_1662 is called method_1661
 	// Inject before it starts saving the file (HEAD is the safest place to do this)
