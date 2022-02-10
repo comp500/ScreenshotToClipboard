@@ -85,8 +85,8 @@ publishing {
 import com.modrinth.minotaur.TaskModrinthUpload
 // TODO: infer from fabric.mod.json?!
 def supportedVersions = [
-		"1.17", "1.17.1", "1.18", "1.18.1"]
-def versionSupportName = "(Fabric 1.17+)"
+		"1.18", "1.18.1"]
+def versionSupportName = "(Fabric 1.18+)"
 
 task publishModrinth(type: TaskModrinthUpload) {
 	dependsOn remapJar

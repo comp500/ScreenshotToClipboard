@@ -93,8 +93,8 @@ publishing {
 
 import com.modrinth.minotaur.TaskModrinthUpload
 def supportedVersions = [
-		"1.17", "1.17.1"]
-def versionSupportName = "(Forge 1.17.x)"
+		"1.18", "1.18.1"]
+def versionSupportName = "(Forge 1.18.x)"
 
 task publishModrinth(type: TaskModrinthUpload) {
 	dependsOn remapJar
