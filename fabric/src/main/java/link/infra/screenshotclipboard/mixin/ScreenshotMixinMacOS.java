@@ -15,7 +15,7 @@ import java.util.function.Consumer;
 @Mixin(ScreenshotRecorder.class)
 public class ScreenshotMixinMacOS {
 	// Inject after saving the image
-	@Inject(at = @At("TAIL"), method = "method_1661")
+	@Inject(at = @At("TAIL"), method = "method_22691")
 	private static void screenshotCapturedMac(NativeImage nativeImage, File file, Consumer<Text> consumer, CallbackInfo ci) {
 		MacOSCompat.doCopyMacOS(file.getAbsolutePath());
 	}

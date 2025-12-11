@@ -14,9 +14,9 @@ import java.util.function.Consumer;
 
 @Mixin(ScreenshotRecorder.class)
 public class ScreenshotMixinAWT {
-	// Lambda in method_1662 is called method_1661
+	// Lambda in method_1662 is called method_1661 in previous versions; it's now called method_22691 in 1.21.5
 	// Inject before it starts saving the file (HEAD is the safest place to do this)
-	@Inject(at = @At(value = "HEAD"), method = "method_1661")
+	@Inject(at = @At(value = "HEAD"), method = "method_22691")
 	private static void screenshotCaptured(NativeImage nativeImage_1, File file_1, Consumer<Text> consumer_1, CallbackInfo ci) {
 		ScreenshotToClipboard.handleScreenshotAWT(nativeImage_1);
 	}

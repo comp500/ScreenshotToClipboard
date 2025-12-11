@@ -18,14 +18,14 @@ Any time you take a screenshot in the game, the image data is copied to the clip
 [[dependencies.screenshotclipboard]]
 modId = "neoforge"
 type = "required"
-versionRange = "[20.6,)"
+versionRange = "[21.5,)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.screenshotclipboard]]
 modId = "minecraft"
 type = "required"
-versionRange = "[1.20.6,)"
+versionRange = "[1.21.5,)"
 ordering = "NONE"
 side = "BOTH"
 
