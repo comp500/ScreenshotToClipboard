@@ -1,13 +1,12 @@
 plugins {
-    id 'dev.architectury.loom' version '1.6-SNAPSHOT' apply false
-    id 'architectury-plugin' version '3.4-SNAPSHOT'
-    id 'com.github.johnrengelman.shadow' version '8.1.1' apply false
+    id 'fabric-loom' version '1.15.4'
 
+    id "com.modrinth.minotaur" version "2.+"
+    id "com.matthewprenger.cursegradle" version "1.4.0"
     id "com.github.breadmoirai.github-release" version "2.5.2"
     id "org.ajoberstar.grgit" version "5.0.0-rc.3"
     id "maven-publish"
 }
-
 
 String getGitVersion(Project project) {
     if (grgit != null) {
@@ -33,104 +32,117 @@ String getChangelog(String githubUrl) {
 }
 
 ext {
-    changelog = getChangelog(rootProject.github_url)
+    changelog = getChangelog(project.github_url)
     changelogGithub = getChangelog(null)
 }
 
-architectury {
-    minecraft = project.minecraft_version
+group = project.maven_group
+version = getGitVersion(project)
+
+base {
+    archivesName = project.archives_name
 }
 
-allprojects {
-    group = rootProject.maven_group
-    version = getGitVersion(rootProject)
-}
-
-subprojects {
-    apply plugin: 'dev.architectury.loom'
-    apply plugin: 'architectury-plugin'
-    apply plugin: 'maven-publish'
-
-    base {
-        // Set up a suffixed format for the mod jar names, e.g. `example-fabric`.
-        archivesName = "$rootProject.archives_name-$project.name"
-    }
-
-    repositories {
-        // Add repositories to retrieve artifacts from in here.
-        // You should only use this when depending on other mods because
-        // Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-        // See https://docs.gradle.org/current/userguide/declaring_repositories.html
-        // for more information about repositories.
-    }
-
-    dependencies {
-        minecraft "net.minecraft:minecraft:$rootProject.minecraft_version"
-        mappings loom.layered {
-            it.mappings("net.fabricmc:yarn:$rootProject.yarn_mappings:v2")
-            it.mappings("dev.architectury:yarn-mappings-patch-neoforge:$rootProject.yarn_mappings_patch_neoforge_version")
-        }
-
-        // This library loads in OSX, but not in Windows - I'm including it here so I can compile on Windows
-        implementation "ca.weblite:java-objc-bridge:1.0.0"
-    }
-
-    java {
-        // Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
-        // if it is present.
-        // If you remove this line, sources will not be generated.
-        withSourcesJar()
-
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
-    }
-
-    tasks.withType(JavaCompile).configureEach {
-        it.options.release = 21
-    }
-
-    // Configure Maven publishing.
-    publishing {
-        publications {
-            mavenJava(MavenPublication) {
-                artifactId = base.archivesName.get()
-                from components.java
-            }
-        }
-
-        // See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
-        repositories {
-            // Add repositories to publish to here.
-            // Notice: This block does NOT have the same function as the block in the top level.
-            // The repositories here will be used for publishing your artifact, not for
-            // retrieving dependencies.
-        }
-    }
-}
-
-configurations {
-    githubReleaseJars {
-        canBeConsumed = false
-        canBeResolved = true
+repositories {
+    maven {
+        url = "https://api.modrinth.com/maven"
     }
 }
 
 dependencies {
-    githubReleaseJars(project(path: ":fabric", configuration: "remapJarOutput"))
-    githubReleaseJars(project(path: ":neoforge", configuration: "remapJarOutput"))
+    minecraft "net.minecraft:minecraft:$project.minecraft_version"
+    mappings "net.fabricmc:yarn:$project.yarn_mappings:v2"
+
+    modImplementation "net.fabricmc:fabric-loader:$project.fabric_loader_version"
+
+    modCompileOnly "maven.modrinth:fabrishot:${project.fabrishot_version}"
+    modCompileOnly fabricApi.module("fabric-api-base", project.fabric_api_version)
+
+    // This library loads in OSX, but not in Windows - I'm including it here so I can compile on Windows
+    implementation "ca.weblite:java-objc-bridge:1.0.0"
+}
+
+processResources {
+    inputs.property 'version', project.version
+
+    filesMatching('fabric.mod.json') {
+        expand version: project.version
+    }
+}
+
+java {
+    withSourcesJar()
+
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 21
+}
+
+// Publishing
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = base.archivesName.get()
+            from components.java
+        }
+    }
+}
+
+def supportedVersions = ["1.21.11"]
+def versionSupportName = "(Fabric/Quilt 1.21.11+)"
+
+if (System.getenv("MODRINTH_TOKEN")) {
+    modrinth {
+        token = System.getenv("MODRINTH_TOKEN")
+        projectId = project.modrinth_id
+        versionNumber = project.mod_version + "+fabric"
+        uploadFile = remapJar
+        gameVersions = supportedVersions
+        loaders = ["fabric", "quilt"]
+        detectLoaders = false
+        versionName = project.mod_version + " " + versionSupportName
+        changelog = project.ext.changelog
+    }
+
+    publish.dependsOn(tasks.named("modrinth"))
+}
+
+if (System.getenv("CURSEFORGE_TOKEN")) {
+    curseforge {
+        apiKey = System.getenv("CURSEFORGE_TOKEN")
+        project {
+            id = project.curseforge_id_fabric
+            releaseType = "release"
+
+            mainArtifact(remapJar) {
+                displayName = project.mod_version + " " + versionSupportName
+            }
+            for (ver in supportedVersions) {
+                addGameVersion(ver)
+            }
+            addGameVersion("Fabric")
+            changelog = project.ext.changelog
+            changelogType = "markdown"
+        }
+    }
+
+    publish.dependsOn(tasks.named("curseforge"))
 }
 
 if (System.getenv("GITHUB_TOKEN")) {
     githubRelease {
-        owner = rootProject.github_repo_user
-        repo = rootProject.github_repo_name
-        tagName = rootProject.mod_version
-        releaseName = "Release ${rootProject.mod_version}"
-        targetCommitish = "1.20-arch" // TODO: get from git?
+        owner = project.github_repo_user
+        repo = project.github_repo_name
+        tagName = project.mod_version
+        releaseName = "Release ${project.mod_version}"
+        targetCommitish = "1.21-arch"
         draft = false
-        body = rootProject.ext.changelogGithub
+        body = project.ext.changelogGithub
         token System.getenv("GITHUB_TOKEN")
-        releaseAssets.from(rootProject.configurations.githubReleaseJars)
+        releaseAssets.from(remapJar)
         overwrite = true
     }
 

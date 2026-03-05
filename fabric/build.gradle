@@ -61,8 +61,8 @@ remapJar {
 }
 
 // TODO: infer from fabric.mod.json?!
-def supportedVersions = ["1.20.6", "1.21"]
-def versionSupportName = "(Fabric/Quilt 1.20.6+)"
+def supportedVersions = ["1.21.11"]
+def versionSupportName = "(Fabric/Quilt 1.21.11+)"
 
 if (System.getenv("MODRINTH_TOKEN")) {
     modrinth {

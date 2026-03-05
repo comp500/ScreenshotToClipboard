@@ -24,8 +24,7 @@
 		]
 	},
 	"mixins": [
-		"screenshotclipboard-fabric.mixins.json",
-		"screenshotclipboard-common.mixins.json"
+		"screenshotclipboard.mixins.json"
 	],
 
 	"depends": {
